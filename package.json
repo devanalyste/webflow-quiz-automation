@@ -1,0 +1,16 @@
+{
+    "name": "webflow-quiz-automation",
+    "version": "1.0.0",
+    "description": "Système de synchronisation automatique des réponses du quiz Webflow",
+    "main": "sync-script.js",
+    "scripts": {
+        "sync": "node sync-script.js",
+        "test": "node sync-script.js --test"
+    },
+    "dependencies": {
+        "dotenv": "^16.3.1",
+        "node-fetch": "^2.7.0"
+    },
+    "author": "",
+    "license": "MIT"
+}

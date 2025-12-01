@@ -1,0 +1,48 @@
+name: Sync Quiz Answers
+
+# Déclenchement automatique tous les jours à 3h du matin
+# OU manuellement depuis l'interface GitHub
+on:
+  schedule:
+    - cron: '0 3 * * *'  # Tous les jours à 3h UTC
+  workflow_dispatch:  # Permet le déclenchement manuel
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Récupérer le code
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Installer Node.js
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # 3. Installer les dépendances
+      - name: 📦 Install dependencies
+        run: npm install
+
+      # 4. Créer le fichier .env avec les secrets
+      - name: 🔐 Create .env file
+        run: |
+          echo "WEBFLOW_API_TOKEN=${{ secrets.WEBFLOW_API_TOKEN }}" >>.env
+          echo "WEBFLOW_SITE_ID=${{ secrets.WEBFLOW_SITE_ID }}" >>.env
+          echo "COLLECTION_QUESTIONS=690997a2978593abdcf5c317" >>.env
+          echo "COLLECTION_REPONSES=69099a71e1a9bb14b6b00b6d" >>.env
+          echo "COLLECTION_EXERCICES=691bc191cb1e542c7478bd13" >>.env
+
+      # 5. Exécuter le script de synchronisation
+      - name: 🚀 Run sync script
+        run: npm run sync
+
+      # 6. Commiter et pusher le fichier généré
+      - name: 💾 Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add answers-hash.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🔄 Auto-sync quiz answers [skip ci]" && git push)
