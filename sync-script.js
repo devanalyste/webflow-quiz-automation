@@ -31,19 +31,7 @@ const CONFIG = {
 // FONCTIONS UTILITAIRES
 // ============================================
 
-/**
- * Génère un hash sécurisé à partir d'une chaîne
-
-function generateHash(input) {
-    return crypto
-        .createHash('sha256')
-        .update(input + process.env.WEBFLOW_API_TOKEN) // Salt avec l'API token
-        .digest('hex')
-        .substring(0, 12); // Garder seulement 12 caractères
-}
- */
-
-// Secret simple partagé (pas sensible comme l'API token)
+// Secret simple partagé
 const QUIZ_SECRET = "internoveco-quiz-2025";
 
 function generateHash(input) {
@@ -119,12 +107,12 @@ async function syncQuizAnswers() {
         const reponses = await getAllCollectionItems(CONFIG.collections.reponses);
         console.log(`✅ ${reponses.length} réponses trouvées\n`);
 
-        // 🔍 DEBUG : Afficher la structure d'une question
+        /* 🔍 DEBUG : Afficher la structure d'une question
         console.log('🔍 DEBUG - Structure de la première question :');
         console.log(JSON.stringify(questions[0], null, 2));
         console.log('\n🔍 DEBUG - FieldData de la première question :');
         console.log(JSON.stringify(questions[0].fieldData, null, 2));
-        console.log('\n');
+        console.log('\n');*/
 
         // 3. CRÉER UN MAP DES RÉPONSES PAR ID
         const reponsesMap = {};
