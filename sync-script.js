@@ -33,7 +33,7 @@ const CONFIG = {
 
 /**
  * Génère un hash sécurisé à partir d'une chaîne
- */
+
 function generateHash(input) {
     return crypto
         .createHash('sha256')
@@ -41,7 +41,18 @@ function generateHash(input) {
         .digest('hex')
         .substring(0, 12); // Garder seulement 12 caractères
 }
+ */
 
+// Secret simple partagé (pas sensible comme l'API token)
+const QUIZ_SECRET = "internoveco-quiz-2025";
+
+function generateHash(input) {
+    return crypto
+        .createHash('sha256')
+        .update(input + QUIZ_SECRET)
+        .digest('hex')
+        .substring(0, 12);
+}
 /**
  * Appel API Webflow avec gestion d'erreurs
  */
@@ -108,6 +119,13 @@ async function syncQuizAnswers() {
         const reponses = await getAllCollectionItems(CONFIG.collections.reponses);
         console.log(`✅ ${reponses.length} réponses trouvées\n`);
 
+        // 🔍 DEBUG : Afficher la structure d'une question
+        console.log('🔍 DEBUG - Structure de la première question :');
+        console.log(JSON.stringify(questions[0], null, 2));
+        console.log('\n🔍 DEBUG - FieldData de la première question :');
+        console.log(JSON.stringify(questions[0].fieldData, null, 2));
+        console.log('\n');
+
         // 3. CRÉER UN MAP DES RÉPONSES PAR ID
         const reponsesMap = {};
         reponses.forEach(reponse => {
@@ -124,39 +142,52 @@ async function syncQuizAnswers() {
             const questionData = question.fieldData;
             const questionName = questionData['nom-interne-de-la-question'] || questionData.name || 'Sans nom';
 
-            // Récupérer la référence de la bonne réponse
-            const bonneReponseRef = questionData['bonne-reponse'];
+            // Chercher le champ bonne-reponse avec différentes variantes
+            const bonneReponseRef = questionData['bonne-reponse-5']
+                || questionData['bonne-reponse']
+                || questionData['bonne-réponse'];
 
             if (!bonneReponseRef) {
                 console.log(`⚠️  Question "${questionName}" : Aucune bonne réponse définie`);
                 continue;
             }
 
-            // Récupérer l'objet réponse complet
-            const bonneReponse = reponsesMap[bonneReponseRef];
+            // 🔥 GÉRER LES RÉPONSES MULTIPLES (tableau)
+            const bonneReponsesArray = Array.isArray(bonneReponseRef) ? bonneReponseRef : [bonneReponseRef];
 
-            if (!bonneReponse) {
-                console.log(`⚠️  Question "${questionName}" : Réponse introuvable`);
+            // Vérifier que toutes les réponses existent
+            const reponsesValides = [];
+            for (const reponseId of bonneReponsesArray) {
+                const reponse = reponsesMap[reponseId];
+                if (!reponse) {
+                    console.log(`⚠️  Question "${questionName}" : Réponse ${reponseId} introuvable`);
+                    continue;
+                }
+                reponsesValides.push(reponseId);
+            }
+
+            if (reponsesValides.length === 0) {
+                console.log(`⚠️  Question "${questionName}" : Aucune réponse valide trouvée`);
                 continue;
             }
 
-            // Récupérer le texte de la réponse
-            const bonneReponseData = bonneReponse.fieldData;
-            const reponseText = bonneReponseData['texte-de-la-reponse'] || bonneReponseData.name;
-
-            // Générer le hash
-            const hash = generateHash(`${questionId}-${bonneReponseRef}-${reponseText}`);
+            // Générer un hash unique basé sur TOUTES les bonnes réponses
+            // Important : on trie pour que l'ordre n'affecte pas le hash
+            const reponsesIdsTriees = reponsesValides.sort().join(',');
+            const hash = generateHash(`${questionId}-${reponsesIdsTriees}`);
 
             answersHash[questionId] = {
                 hash: hash,
-                questionName: questionName
+                questionName: questionName,
+                correctAnswersCount: reponsesValides.length,
+                isMultiple: reponsesValides.length > 1
             };
 
             processedCount++;
             console.log(`✓ Question: "${questionName}"`);
+            console.log(`  Bonnes réponses: ${reponsesValides.length}`);
             console.log(`  Hash généré: ${hash}\n`);
         }
-
         // 5. SAUVEGARDER LE FICHIER JSON
         console.log('💾 Sauvegarde du fichier JSON...');
 
