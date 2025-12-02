@@ -79,7 +79,7 @@ Le fichier `answers-hash.json` généré contient :
 
 ## 🔐 Sécurité
 
-- Les hash sont générés avec SHA-256 + salt
+- Les hash sont générés avec SHA-256
 - Impossible de retrouver la réponse depuis le hash
 - Le fichier JSON ne contient aucune information sensible
 
